@@ -119,6 +119,11 @@ public class SkiaPooledImageRegionDecoder implements ImageRegionDecoder {
         return this.imageDimensions;
     }
 
+    @Override
+    public Point init(Context context, byte[] bytes) throws Exception {
+        return null;
+    }
+
     /**
      * Initialises extra decoders for as long as {@link #allowAdditionalDecoder(int, long)} returns
      * true and the pool has not been recycled.
