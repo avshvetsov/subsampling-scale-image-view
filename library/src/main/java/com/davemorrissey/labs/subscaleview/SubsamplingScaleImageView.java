@@ -131,6 +131,10 @@ public class SubsamplingScaleImageView extends View {
     /** State change originated from a double tap zoom anim. */
     public static final int ORIGIN_DOUBLE_TAP_ZOOM = 4;
 
+    /** Swipe threshold */
+    private static final int SWIPE_THRESHOLD = 150;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+
     // Bitmap (preview or full image)
     private Bitmap bitmap;
 
@@ -259,6 +263,9 @@ public class SubsamplingScaleImageView extends View {
 
     // Scale and center listener
     private OnStateChangedListener onStateChangedListener;
+
+    // Gesture listener
+    private OnGestureListener onGestureListener;
 
     // Long click listener
     private OnLongClickListener onLongClickListener;
@@ -567,12 +574,44 @@ public class SubsamplingScaleImageView extends View {
         this.detector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
 
             @Override
+            public boolean onDown(MotionEvent e) {
+                return true;
+            }
+
+            @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 if (panEnabled && readySent && vTranslate != null && e1 != null && e2 != null && (Math.abs(e1.getX() - e2.getX()) > 50 || Math.abs(e1.getY() - e2.getY()) > 50) && (Math.abs(velocityX) > 500 || Math.abs(velocityY) > 500) && !isZooming) {
                     PointF vTranslateEnd = new PointF(vTranslate.x + (velocityX * 0.25f), vTranslate.y + (velocityY * 0.25f));
                     float sCenterXEnd = ((getWidth()/2) - vTranslateEnd.x)/scale;
                     float sCenterYEnd = ((getHeight()/2) - vTranslateEnd.y)/scale;
                     new AnimationBuilder(new PointF(sCenterXEnd, sCenterYEnd)).withEasing(EASE_OUT_QUAD).withPanLimited(false).withOrigin(ORIGIN_FLING).start();
+
+                    if (vTranslate.x == 0f) {
+                        try {
+                            float diffY = e2.getY() - e1.getY();
+                            float diffX = e2.getX() - e1.getX();
+                            if (Math.abs(diffX) > Math.abs(diffY)) {
+                                if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                                    if (diffX > 0) {
+                                        onGestureListener.onSwipeRight();
+                                    } else {
+                                        onGestureListener.onSwipeLeft();
+                                    }
+                                }
+                            } else {
+                                if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+                                    if (diffY > 0) {
+                                        onGestureListener.onSwipeDown();
+                                    } else {
+                                        onGestureListener.onSwipeUp();
+                                    }
+                                }
+                            }
+                        } catch (Exception exception) {
+                            exception.printStackTrace();
+                        }
+                    }
+
                     return true;
                 }
                 return super.onFling(e1, e2, velocityX, velocityY);
@@ -580,6 +619,7 @@ public class SubsamplingScaleImageView extends View {
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
+                onGestureListener.onSingleTapConfirm();
                 performClick();
                 return true;
             }
@@ -2941,6 +2981,15 @@ public class SubsamplingScaleImageView extends View {
     }
 
     /**
+     * Add a listener for swipe and single tap events. Extend {@link DefaultOnGestureListener} to simplify
+     * implementation.
+     * @param onGestureListener an {@link OnGestureListener} instance.
+     */
+    public void setOnGestureListener(OnGestureListener onGestureListener) {
+        this.onGestureListener = onGestureListener;
+    }
+
+    /**
      * Creates a panning animation builder, that when started will animate the image to place the given coordinates of
      * the image in the center of the screen. If doing this would move the image beyond the edges of the screen, the
      * image is instead animated to move the center point as near to the center of the screen as is allowed - it's
@@ -3287,6 +3336,37 @@ public class SubsamplingScaleImageView extends View {
 
         @Override public void onCenterChanged(PointF newCenter, int origin) { }
         @Override public void onScaleChanged(float newScale, int origin) { }
+
+    }
+
+    /**
+     *Listern swipes and single tap
+     */
+    @SuppressWarnings("EmptyMethod")
+    public interface OnGestureListener {
+
+        void onSwipeRight();
+
+        void onSwipeLeft();
+
+        void onSwipeUp();
+
+        void onSwipeDown();
+
+        void onSingleTapConfirm();
+
+    }
+
+    /**
+     * Default implementation of {@link OnGestureListener}. This does nothing in any method.
+     */
+    public static class DefaultOnGestureListener implements OnGestureListener {
+
+        @Override public void onSwipeRight() { }
+        @Override public void onSwipeLeft() { }
+        @Override public void onSwipeUp() { }
+        @Override public void onSwipeDown() { }
+        @Override public void onSingleTapConfirm() { }
 
     }
 
