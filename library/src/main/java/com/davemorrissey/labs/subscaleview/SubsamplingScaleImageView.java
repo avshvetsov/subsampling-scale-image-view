@@ -581,7 +581,7 @@ public class SubsamplingScaleImageView extends View {
                     float sCenterYEnd = ((getHeight()/2) - vTranslateEnd.y)/scale;
                     new AnimationBuilder(new PointF(sCenterXEnd, sCenterYEnd)).withEasing(EASE_OUT_QUAD).withPanLimited(false).withOrigin(ORIGIN_FLING).start();
 
-                    if (vTranslate.x == 0f) {
+                    if (vTranslate.x == 0f || vTranslate.y == 0f ) {
                         try {
                             float diffY = e2.getY() - e1.getY();
                             float diffX = e2.getX() - e1.getX();
