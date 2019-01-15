@@ -198,9 +198,10 @@ public class SubsamplingScaleImageView extends View {
     private int doubleTapZoomStyle = ZOOM_FOCUS_FIXED;
     private int doubleTapZoomDuration = 500;
 
-    // Current scale and scale at start of zoom
+    // Current scale and scale at start of zoom, and scale before all zooming actions
     private float scale;
     private float scaleStart;
+    private float scaleBase;
 
     // Screen coordinate of top-left corner of source image
     private PointF vTranslate;
@@ -581,31 +582,32 @@ public class SubsamplingScaleImageView extends View {
                     float sCenterYEnd = ((getHeight()/2) - vTranslateEnd.y)/scale;
                     new AnimationBuilder(new PointF(sCenterXEnd, sCenterYEnd)).withEasing(EASE_OUT_QUAD).withPanLimited(false).withOrigin(ORIGIN_FLING).start();
 
-                    if (vTranslate.x == 0f || vTranslate.y == 0f ) {
-                        try {
-                            float diffY = e2.getY() - e1.getY();
-                            float diffX = e2.getX() - e1.getX();
-                            if (Math.abs(diffX) > Math.abs(diffY)) {
-                                if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-                                    if (diffX > 0) {
-                                        onGestureListener.onSwipeRight();
-                                    } else {
-                                        onGestureListener.onSwipeLeft();
+                        //TODO change if conditions.
+                        if (onGestureListener != null && scale <= scaleBase) {
+                            try {
+                                float diffY = e2.getY() - e1.getY();
+                                float diffX = e2.getX() - e1.getX();
+                                if (Math.abs(diffX) > Math.abs(diffY)) {
+                                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                                        if (diffX > 0) {
+                                            onGestureListener.onSwipeRight();
+                                        } else {
+                                            onGestureListener.onSwipeLeft();
+                                        }
+                                    }
+                                } else {
+                                    if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+                                        if (diffY > 0) {
+                                            onGestureListener.onSwipeDown();
+                                        } else {
+                                            onGestureListener.onSwipeUp();
+                                        }
                                     }
                                 }
-                            } else {
-                                if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
-                                    if (diffY > 0) {
-                                        onGestureListener.onSwipeDown();
-                                    } else {
-                                        onGestureListener.onSwipeUp();
-                                    }
-                                }
+                            } catch (Exception exception) {
+                                exception.printStackTrace();
                             }
-                        } catch (Exception exception) {
-                            exception.printStackTrace();
                         }
-                    }
 
                     return true;
                 }
@@ -2982,6 +2984,10 @@ public class SubsamplingScaleImageView extends View {
      */
     public void setOnGestureListener(OnGestureListener onGestureListener) {
         this.onGestureListener = onGestureListener;
+    }
+
+    public void setScaleBase() {
+        scaleBase = scale;
     }
 
     /**
